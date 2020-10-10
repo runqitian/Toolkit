@@ -14,7 +14,11 @@ RQTransServer::RQTransServer(const int port)
 :port(port) {}
 
 int RQTransServer::establish_socket(){
-	struct sockaddr_in sa = {AF_INET, htons(port), INADDR_ANY};
+	// struct sockaddr_in sa = {AF_INET, htons(port), INADDR_ANY};
+	struct sockaddr_in sa;
+	sa.sin_addr.s_addr = htonl(INADDR_ANY);
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons(port);
 	int sockfd;
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		return -1;

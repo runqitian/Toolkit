@@ -21,8 +21,10 @@ RQTransClient::RQTransClient(const std::string host, const int port): host(host)
 		fprintf(stderr, "socket creation failed!\n");
 		exit(1);
 	}
-
-	struct sockaddr_in sa = {AF_INET, htons(port), *((struct in_addr *)ip->h_addr)};
+	struct sockaddr_in sa;
+	memcpy(&sa.sin_addr, ip->h_addr_list[0], ip->h_length);
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons(port);
 
 	if (connect(sockfd, (struct sockaddr *)&sa, sizeof(sa)) < 0){
 		close(sockfd);

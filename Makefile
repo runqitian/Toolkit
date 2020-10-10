@@ -6,7 +6,7 @@ all: rqtrans
 
 rqtrans: src/*
 	mkdir -p bin
-	$(CC) $(CC_FLAGS) -pthread src/rqtrans/* -o bin/$@
+	$(CC) $(CC_FLAGS) -pthread src/rqtrans/*.cpp -o bin/$@
 
 clean:
 	rm -rf bin/*
