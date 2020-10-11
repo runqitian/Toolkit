@@ -284,7 +284,7 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 
 		// now we can write the file.
 		if (ftype == 'd'){
-			 mkdir(path.c_str(), 0700);
+			 mkdir(path.c_str(), 755);
 		}else{
 			FILE *fp;
 			if ((fp = fopen(path.c_str(), "wb")) == NULL){
