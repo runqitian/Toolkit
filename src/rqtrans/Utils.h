@@ -11,6 +11,7 @@ namespace Utils
 	std::string pathAppend(const std::string &base, const std::string &fname);
 	std::string extractFilename(const std::string &path);
 	void listDir(const std::string dpath, const std::string dname, std::vector<std::string> &nls, std::vector<std::string> &pls, std::vector<char> &tls);	
+	bool deleteDir(const std::string dpath);
 }
 
 

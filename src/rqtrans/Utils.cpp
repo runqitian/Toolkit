@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <vector>
+#include <unistd.h>
 
 
 bool Utils::isPathExist(const std::string &s){
@@ -79,4 +80,41 @@ void Utils::listDir(const std::string dpath, const std::string dname, std::vecto
 			tls.push_back('f');
 		}
 	}
+}
+
+
+bool Utils::deleteDir(const std::string dpath){
+    DIR *dp;
+    struct dirent *de;
+    std::string sep = "/";
+    #ifdef _WIN32
+    sep = "\\";
+    #endif
+
+    if ((dp = opendir(dpath.c_str())) == NULL) {
+    	fprintf(stderr, "can not open directory %s\n", dpath.c_str());
+        return false;
+    }
+    while ((de = readdir(dp)) != NULL){
+        if (strcmp(de -> d_name, "..") == 0 || strcmp(de -> d_name, ".") == 0){
+            continue;
+        }
+        if (de->d_type == DT_DIR) {
+            std::string subdpath = dpath + sep + std::string(de->d_name);
+            if (!deleteDir(subdpath)){
+            	return false;
+            }
+        }else{
+            std::string subfpath = dpath + sep + std::string(de->d_name);
+            if (unlink(subfpath.c_str()) != 0){
+            	fprintf(stderr, "can not remove file %s\n", subfpath.c_str());
+        		return false;
+            }
+        }
+    }
+    if (rmdir(dpath.c_str()) != 0){
+    	fprintf(stderr, "can not remove directory %s\n", dpath.c_str());
+        return false;
+    }
+    return true;
 }

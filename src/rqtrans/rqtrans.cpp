@@ -66,7 +66,7 @@ int main(int argc, char *argv[]){
 			client.transferText(info.text);
 		}else{
 			if (Utils::isPathDir(info.filepath)){
-				client.transferDir(info.filepath);
+				client.transferDir(info.filepath, info.force);
 			}else{
 				client.transferFile(info.filepath, info.force);
 			}
