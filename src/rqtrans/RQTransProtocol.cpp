@@ -161,13 +161,25 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 	// file exist or not? overwirte?
 	std::string path = Utils::pathAppend(baseDir, decodingName(std::string(fname)));
 	if (Utils::isPathDir(std::string(path))){
-		const char *resp = "400 ERROR: Same name directory on server side\n";
-		sendBytes(sockfd, resp, strlen(resp));
-		return false;
+		if (!force){
+			const char *resp = "400 ERROR: Same name directory on server side and not forced.\n";
+			sendBytes(sockfd, resp, strlen(resp));
+			return false;
+		}
+		if (!Utils::deleteDir(path)){
+			const char *resp = "400 ERROR: Directory on server side can not be overwritten.\n";
+			sendBytes(sockfd, resp, strlen(resp));
+			return false;
+		}
 	}
 	if (Utils::isPathExist(std::string(path))){
 		if (!force){
 			const char *resp = "400 ERROR: Same name file on server side and not forced.\n";
+			sendBytes(sockfd, resp, strlen(resp));
+			return false;
+		}
+		if (unlink(path.c_str()) != 0){
+			const char *resp = "400 ERROR: File on server side can not be overwritten.\n";
 			sendBytes(sockfd, resp, strlen(resp));
 			return false;
 		}
@@ -274,17 +286,39 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 		// file exist or not? overwirte?
 		std::string path = Utils::pathAppend(baseDir, decodingName(std::string(fname)));
 		if (first_loop){
+
+			// file exist or not? overwirte?
+			if (Utils::isPathDir(std::string(path))){
+				if (!force){
+					const char *resp = "400 ERROR: Same name directory on server side and not forced.\n";
+					sendBytes(sockfd, resp, strlen(resp));
+					return false;
+				}
+				if (!Utils::deleteDir(path)){
+					const char *resp = "400 ERROR: Directory on server side can not be overwritten.\n";
+					sendBytes(sockfd, resp, strlen(resp));
+					return false;
+				}
+			}
 			if (Utils::isPathExist(std::string(path))){
-				const char *resp = "400 ERROR: Same name file or directory on server side\n";
-				sendBytes(sockfd, resp, strlen(resp));
-				return false;
+				if (!force){
+					const char *resp = "400 ERROR: Same name file on server side and not forced.\n";
+					sendBytes(sockfd, resp, strlen(resp));
+					return false;
+				}
+				if (unlink(path.c_str()) != 0){
+					const char *resp = "400 ERROR: File on server side can not be overwritten.\n";
+					sendBytes(sockfd, resp, strlen(resp));
+					return false;
+				} 
 			}
 			first_loop = false;
 		}
 
+
 		// now we can write the file.
 		if (ftype == 'd'){
-			 mkdir(path.c_str(), 755);
+			 mkdir(path.c_str(), 0755);
 		}else{
 			FILE *fp;
 			if ((fp = fopen(path.c_str(), "wb")) == NULL){

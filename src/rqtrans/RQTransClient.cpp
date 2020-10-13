@@ -44,8 +44,8 @@ void RQTransClient::transferFile(const std::string &filepath, const bool force){
 	prot.execClient('f', filepath, force);
 }
 
-void RQTransClient::transferDir(const std::string &dirpath){
+void RQTransClient::transferDir(const std::string &dirpath, const bool force){
 	fflush(stdout);
 	RQTransProtocol prot(sockfd);
-	prot.execClient('d', dirpath);
+	prot.execClient('d', dirpath, force);
 }
