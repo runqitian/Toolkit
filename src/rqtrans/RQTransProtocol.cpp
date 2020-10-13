@@ -155,6 +155,7 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 	if (sscanf(header.c_str(), "t %s %ld\n", fname, &fsize) != 2){
 		const char *resp = "400 ERROR: Request format invalid\n";
 		sendBytes(sockfd, resp, strlen(resp));
+		fprintf(stderr, "%s", resp);
 		return false;
 	}
 
@@ -164,11 +165,13 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 		if (!force){
 			const char *resp = "400 ERROR: Same name directory on server side and not forced.\n";
 			sendBytes(sockfd, resp, strlen(resp));
+			fprintf(stderr, "%s", resp);
 			return false;
 		}
 		if (!Utils::deleteDir(path)){
 			const char *resp = "400 ERROR: Directory on server side can not be overwritten.\n";
 			sendBytes(sockfd, resp, strlen(resp));
+			fprintf(stderr, "%s", resp);
 			return false;
 		}
 	}
@@ -176,11 +179,13 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 		if (!force){
 			const char *resp = "400 ERROR: Same name file on server side and not forced.\n";
 			sendBytes(sockfd, resp, strlen(resp));
+			fprintf(stderr, "%s", resp);
 			return false;
 		}
 		if (unlink(path.c_str()) != 0){
 			const char *resp = "400 ERROR: File on server side can not be overwritten.\n";
 			sendBytes(sockfd, resp, strlen(resp));
+			fprintf(stderr, "%s", resp);
 			return false;
 		}
 	}
@@ -190,6 +195,7 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 	if ((fp = fopen(path.c_str(), "wb")) == NULL){
 		const char *resp = "400 ERROR: File written error\n";
 		sendBytes(sockfd, resp, strlen(resp));
+		fprintf(stderr, "%s", resp);
 		return false;
 	}
 	char *fbuffer = (char *)malloc(sizeof(char) * BUFF_SIZE);
@@ -267,6 +273,7 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 	if (sscanf(req.c_str(), "t %ld\n", &expectedNum) != 1){
 		const char *resp = "400 ERROR: expected number record invalid\n";
 		sendBytes(sockfd, resp, strlen(resp));
+		fprintf(stderr, "%s", resp);
 		return false;
 	}
 
@@ -280,6 +287,7 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 		if (sscanf(header.c_str(), "t %c %s %ld\n", &ftype, fname, &fsize) != 3){
 			const char *resp = "400 ERROR: file format invalid\n";
 			sendBytes(sockfd, resp, strlen(resp));
+			fprintf(stderr, "%s", resp);
 			return false;
 		}
 
@@ -292,11 +300,13 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 				if (!force){
 					const char *resp = "400 ERROR: Same name directory on server side and not forced.\n";
 					sendBytes(sockfd, resp, strlen(resp));
+					fprintf(stderr, "%s", resp);
 					return false;
 				}
 				if (!Utils::deleteDir(path)){
 					const char *resp = "400 ERROR: Directory on server side can not be overwritten.\n";
 					sendBytes(sockfd, resp, strlen(resp));
+					fprintf(stderr, "%s", resp);
 					return false;
 				}
 			}
@@ -304,11 +314,13 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 				if (!force){
 					const char *resp = "400 ERROR: Same name file on server side and not forced.\n";
 					sendBytes(sockfd, resp, strlen(resp));
+					fprintf(stderr, "%s", resp);
 					return false;
 				}
 				if (unlink(path.c_str()) != 0){
 					const char *resp = "400 ERROR: File on server side can not be overwritten.\n";
 					sendBytes(sockfd, resp, strlen(resp));
+					fprintf(stderr, "%s", resp);
 					return false;
 				} 
 			}
@@ -324,6 +336,7 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 			if ((fp = fopen(path.c_str(), "wb")) == NULL){
 				const char *resp = "400 ERROR: File written error\n";
 				sendBytes(sockfd, resp, strlen(resp));
+				fprintf(stderr, "%s", resp);
 				return false;
 			}
 
@@ -353,7 +366,7 @@ void RQTransProtocol::sendBytes(int s, const char *msg, const unsigned int len){
 	while(remain > BUFF_SIZE){
 		int num = send(s, p, BUFF_SIZE, 0);
 		if (num == -1){
-			fprintf(stderr, "Sending Message Error\n");
+			fprintf(stderr, "Socket Bytes Sending Error\n");
 			close(s);
 			exit(1);
 		}
@@ -365,7 +378,7 @@ void RQTransProtocol::sendBytes(int s, const char *msg, const unsigned int len){
 	if (remain > 0){
 		int num = send(s, p, remain, 0);
 		if (num == -1){
-			fprintf(stderr, "Sending Message Error\n");
+			fprintf(stderr, "Socket Bytes Sending Error\n");
 			close(s);
 			exit(1);
 		}
@@ -480,7 +493,7 @@ void RQTransProtocol::execServer(const std::string baseDir){
 	if (type == 't'){
 		std::string output;
 		if (!ReceiveText(output)){
-			fprintf(stderr, "Server: Text Transfer failed\n");
+			fprintf(stderr, "Server: Text Reception failed\n");
 			fflush(stderr);
 			close(sockfd);
 			return;
@@ -490,7 +503,7 @@ void RQTransProtocol::execServer(const std::string baseDir){
 	}
 	else if (type == 'f'){
 		if (!ReceiveFile(baseDir)){
-			fprintf(stderr, "Server: File Transfer failed\n");
+			fprintf(stderr, "Server: File Reception failed\n");
 			fflush(stderr);
 			close(sockfd);
 			return;
@@ -500,14 +513,13 @@ void RQTransProtocol::execServer(const std::string baseDir){
 	}
 	else if (type == 'd'){
 		if (!ReceiveDir(baseDir)){
-			fprintf(stderr, "Server: Directory Transfer failed\n");
+			fprintf(stderr, "Server: Directory Reception failed\n");
 			fflush(stderr);
 			close(sockfd);
 			return;
 		}
 		fprintf(stdout, "Directory received\n");
 		fflush(stdout);
-
 	}
 }
 

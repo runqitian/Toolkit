@@ -65,4 +65,5 @@ void RQTransServer::run(const std::string path){
 void RQTransServer::TransCommunication(const int sockfd){
 	RQTransProtocol prot(sockfd);
 	prot.execServer(path);
+	close(sockfd);
 }

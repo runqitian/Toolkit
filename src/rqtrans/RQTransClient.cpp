@@ -36,16 +36,19 @@ RQTransClient::RQTransClient(const std::string host, const int port): host(host)
 void RQTransClient::transferText(const std::string &text){
 	RQTransProtocol prot(sockfd);
 	prot.execClient('t', text);
+	close(sockfd);
 }
 
 void RQTransClient::transferFile(const std::string &filepath, const bool force){
 	fflush(stdout);
 	RQTransProtocol prot(sockfd);
 	prot.execClient('f', filepath, force);
+	close(sockfd);
 }
 
 void RQTransClient::transferDir(const std::string &dirpath, const bool force){
 	fflush(stdout);
 	RQTransProtocol prot(sockfd);
 	prot.execClient('d', dirpath, force);
+	close(sockfd);
 }
