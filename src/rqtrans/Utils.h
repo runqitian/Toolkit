@@ -6,6 +6,7 @@
 #define UTILS_H
 namespace Utils
 {
+	std::string getProcessBar(const float percent);
     bool isPathExist(const std::string &s);
 	bool isPathDir(const std::string &s);
 	std::string pathAppend(const std::string &base, const std::string &fname);

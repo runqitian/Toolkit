@@ -130,12 +130,20 @@ bool RQTransProtocol::TransferFile(const std::string &fpath){
 	sendBytes(sockfd, buffer, pre_len);
 
 	int bnum;
+	int bcount = 0;
 	while((bnum = fread(buffer, sizeof(char), BUFF_SIZE, fp)) == BUFF_SIZE){
 		sendBytes(sockfd, buffer, BUFF_SIZE);
+		bcount += bnum;
+		std::string bar = Utils::getProcessBar((float)bcount / fsize);
+		fprintf(stdout, "\r%s %s", fpath.c_str(), bar.c_str());
 	}
 	if (bnum > 0){
 		sendBytes(sockfd, buffer, bnum);
+		bcount += bnum;
+		std::string bar = Utils::getProcessBar((float)bcount / fsize);
+		fprintf(stdout, "\r%s %s", fpath.c_str(), bar.c_str());
 	}
+	fprintf(stdout, "\n");
 	free(buffer);
 	fclose(fp);
 
@@ -204,9 +212,12 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 		readBytes(sockfd, fbuffer, BUFF_SIZE);
 		fwrite(fbuffer, sizeof(char), BUFF_SIZE, fp);
 		unread -= BUFF_SIZE;
+		std::string bar = Utils::getProcessBar(1 - (float)unread / fsize);
+		fprintf(stdout, "\r%s %s", path.c_str(), bar.c_str());
 	}
 	readBytes(sockfd, fbuffer, unread);
 	fwrite(fbuffer, sizeof(char), unread, fp);
+	fprintf(stdout, "\r%s %s\n", path.c_str(), Utils::getProcessBar(1).c_str());
 	fclose(fp);
 	const char *resp = "200 OK: Received\n";
 	sendBytes(sockfd, resp, strlen(resp));
@@ -214,6 +225,8 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 }
 
 bool RQTransProtocol::TransferDir(const std::string &dpath) {
+	printf("transfer file");
+	fflush(stdout);
 	std::vector<std::string> nls;
 	std::vector<std::string> pls;
 	std::vector<char> tls;
@@ -227,8 +240,11 @@ bool RQTransProtocol::TransferDir(const std::string &dpath) {
 	req += std::to_string(expectedNum);
 	req += "\n";
 	sendBytes(sockfd, req.c_str(), req.size());
-
+	printf("before alloc");
+	fflush(stdout);
 	char *buffer = (char *)malloc(sizeof(char) * BUFF_SIZE);
+	printf("afeter alloc");
+	fflush(stdout);
 	for (int i = 0; i < nls.size(); i++){
 		if(tls[i] == 'f'){
 			FILE *fp;
@@ -246,11 +262,18 @@ bool RQTransProtocol::TransferDir(const std::string &dpath) {
 			sendBytes(sockfd, buffer, pre_len);
 
 			int bnum;
+			int bcount;
 			while((bnum = fread(buffer, sizeof(char), BUFF_SIZE, fp)) == BUFF_SIZE){
 				sendBytes(sockfd, buffer, BUFF_SIZE);
+				bcount += bnum;
+				std::string bar = Utils::getProcessBar((float)bcount / fsize);
+				fprintf(stdout, "\r%s %s", pls[i].c_str(), bar.c_str());
 			}
 			if (bnum > 0){
 				sendBytes(sockfd, buffer, bnum);
+				bcount += bnum;
+				std::string bar = Utils::getProcessBar((float)bcount / fsize);
+				fprintf(stdout, "\r%s %s", pls[i].c_str(), bar.c_str());
 			}
 			fclose(fp);
 		}else{
@@ -258,6 +281,7 @@ bool RQTransProtocol::TransferDir(const std::string &dpath) {
 			sendBytes(sockfd, buffer, pre_len);
 		}
 	}
+	fprintf(stdout, "\n");
 	std::string resp = readline(sockfd);
 	if (resp == "200 OK: Received\n"){
 		return true;
@@ -346,14 +370,18 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 				readBytes(sockfd, fbuffer, BUFF_SIZE);
 				fwrite(fbuffer, sizeof(char), BUFF_SIZE, fp);
 				unread -= BUFF_SIZE;
+				std::string bar = Utils::getProcessBar(1 - (float)unread / fsize);
+				fprintf(stdout, "\r%s %s", path.c_str(), bar.c_str());
 			}
 			readBytes(sockfd, fbuffer, unread);
 			fwrite(fbuffer, sizeof(char), unread, fp);
+			free(fbuffer);
+			fprintf(stdout, "\r%s %s", path.c_str(), Utils::getProcessBar(1).c_str());
 			fclose(fp);
 		}
-		printf("received %s\n", path.c_str());
 		fflush(stdout);
 	}
+	fprintf(stdout, "\n");
 	const char *resp = "200 OK: Received\n";
 	sendBytes(sockfd, resp, strlen(resp));
 	return true;
