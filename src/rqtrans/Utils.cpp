@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstring>
+#include <stdexcept>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <vector>
@@ -32,6 +33,9 @@ std::string processBar[] {
 };
 
 std::string Utils::getProcessBar(const float percent){
+    if(percent > 1 || percent < 0){
+        throw std::runtime_error("Utils::getProcessBar\tinput percent invalid");
+    }
 	int idx = (int)(percent * 20);
 	return processBar[idx];
 }

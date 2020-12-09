@@ -262,7 +262,7 @@ bool RQTransProtocol::TransferDir(const std::string &dpath) {
 			sendBytes(sockfd, buffer, pre_len);
 
 			int bnum;
-			int bcount;
+			int bcount = 0;
 			while((bnum = fread(buffer, sizeof(char), BUFF_SIZE, fp)) == BUFF_SIZE){
 				sendBytes(sockfd, buffer, BUFF_SIZE);
 				bcount += bnum;

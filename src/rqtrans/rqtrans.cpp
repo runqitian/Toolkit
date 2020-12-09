@@ -53,8 +53,6 @@ int strToPort(char* str);
 bool argParser(int argc, char *argv[], struct Info &info);
 
 int main(int argc, char *argv[]){
-	printf("at the beginning\n");
-	fflush(stdout);
 	struct Info info;
 	if (!argParser(argc, argv, info)){
 		exit(1);
@@ -63,22 +61,11 @@ int main(int argc, char *argv[]){
 		RQTransServer server(info.port);
 		server.run(info.path);
 	}else{
-
-		printf("here1\n");
-		fflush(stdout);
 		RQTransClient client(info.host, info.port);
-		printf("here 1.1\n");
-		fflush(stdout);
 		if (info.text_mode){
-			printf("here1.5");
-			fflush(stdout);
 			client.transferText(info.text);
 		}else{
-			printf("here2");
-			fflush(stdout);
 			if (Utils::isPathDir(info.filepath)){
-				printf("here3");
-				fflush(stdout);
 				client.transferDir(info.filepath, info.force);
 			}else{
 				client.transferFile(info.filepath, info.force);
