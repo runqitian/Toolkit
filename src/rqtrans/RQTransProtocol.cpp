@@ -7,6 +7,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <stdexcept>
 
 
 std::string RQTransProtocol::encodingName(const std::string &name) {
@@ -226,8 +227,6 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir, std::string &last_
 }
 
 bool RQTransProtocol::TransferDir(const std::string &dpath) {
-	printf("transfer file");
-	fflush(stdout);
 	std::vector<std::string> nls;
 	std::vector<std::string> pls;
 	std::vector<char> tls;
@@ -241,11 +240,7 @@ bool RQTransProtocol::TransferDir(const std::string &dpath) {
 	req += std::to_string(expectedNum);
 	req += "\n";
 	sendBytes(sockfd, req.c_str(), req.size());
-	printf("before alloc");
-	fflush(stdout);
 	char *buffer = (char *)malloc(sizeof(char) * BUFF_SIZE);
-	printf("afeter alloc");
-	fflush(stdout);
 	for (int i = 0; i < nls.size(); i++){
 		if(tls[i] == 'f'){
 			FILE *fp;
@@ -397,7 +392,7 @@ void RQTransProtocol::sendBytes(int s, const char *msg, const unsigned int len){
 		if (num == -1){
 			fprintf(stderr, "Socket Bytes Sending Error\n");
 			close(s);
-			exit(1);
+			throw 1;
 		}
 		// fprintf(stdout, "sent %d bytes\n", num);
 		fflush(stdout);
@@ -409,7 +404,7 @@ void RQTransProtocol::sendBytes(int s, const char *msg, const unsigned int len){
 		if (num == -1){
 			fprintf(stderr, "Socket Bytes Sending Error\n");
 			close(s);
-			exit(1);
+			throw 1;
 		}
 		fflush(stdout);
 	}
@@ -423,7 +418,7 @@ void RQTransProtocol::readBytes(int s, char * dest, int len) {
 		if ((sbuff_size = recv(s, sbuff, BUFF_SIZE, 0)) <= 0) {
 			fprintf(stderr, "Connection closed unexpectedly!\n");
 			close(s);
-			exit(1);
+			throw 1;
 		}
 	}
 	int need = len;
@@ -435,7 +430,7 @@ void RQTransProtocol::readBytes(int s, char * dest, int len) {
 		if ((sbuff_size = recv(s, sbuff, BUFF_SIZE, 0)) <= 0){
 			fprintf(stderr, "Connection closed unexpectedly!\n");
 			close(s);
-			exit(1);
+			throw 1;
 		}
 	}
 	memcpy(p, sbuff, need);
@@ -448,7 +443,7 @@ std::string RQTransProtocol::readline(int s){
 		if ((sbuff_size = recv(s, sbuff, BUFF_SIZE, 0)) <= 0) {
 			fprintf(stderr, "Connection closed unexpectedly!\n");
 			close(s);
-			exit(1);
+			throw 1;
 		}
 	}
 	std::string msg;
@@ -469,7 +464,7 @@ std::string RQTransProtocol::readline(int s){
 			if ((sbuff_size = recv(s, sbuff, BUFF_SIZE, 0)) <= 0){
 				fprintf(stderr, "Connection closed unexpectedly!\n");
 				close(s);
-				exit(1);
+				throw 1;
 			}
 			idx = 0;
 		}

@@ -81,21 +81,8 @@ void RQTransServer::upload_download_run(const std::string path){
 			printf("connection failed!\n");
 			continue;
 		}
-		bool download = false;
-		if (!upload_download_prot(t, download)){
-			close(t);
-			continue;
-		}
-		RQTransProtocol prot(t);
-		if (download){
-			prot.execClient(this -> last_received_type, this -> last_received, false);
-		}else{
-			bool success = prot.execServer(path, this -> last_received, this -> last_received_type);
-			if (!success){
-				last_received = "";
-			}
-		}
-		close(t);
+		std::thread t1(&RQTransServer::UploadDownloadCommunication, this, t);
+		t1.join();
 	}
 }
 
@@ -116,6 +103,34 @@ bool RQTransServer::upload_download_prot(int sockfd, bool &download){
 	std::string res = "400 ERROR: Invalid Request\n";
 	prot.sendBytes(sockfd, res.c_str(), res.size());
 	return false;
+}
+
+void RQTransServer::UploadDownloadCommunication(const int sockfd){
+	bool download = false;
+	if (!upload_download_prot(sockfd, download)){
+		close(sockfd);
+		return;
+	}
+	RQTransProtocol prot(sockfd);
+	if (download){
+		try{
+			prot.execClient(this -> last_received_type, this -> last_received, false);
+		}catch (int e){
+			close(sockfd);
+			return;
+		}
+	}else{
+		try{
+			bool success = prot.execServer(path, this -> last_received, this -> last_received_type);
+			if (!success){
+				last_received = "";
+			}
+		}catch(int e){
+			close(sockfd);
+			return;
+		}
+	}
+	close(sockfd);
 }
 
 void RQTransServer::TransCommunication(const int sockfd){
