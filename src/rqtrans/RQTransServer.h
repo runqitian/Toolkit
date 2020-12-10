@@ -8,6 +8,8 @@ private:
 	int sockfd;
 	int port;
 	std::string path;
+	std::string last_received;
+	char last_received_type;
 
 	int establish_socket();
 	int get_connection(const int sockfd);
@@ -15,5 +17,7 @@ private:
 public:
 	RQTransServer(const int port);
 	void run(const std::string path);
+	void upload_download_run(const std::string path);
+	bool upload_download_prot(int sockfd, bool &download);
 };
 #endif

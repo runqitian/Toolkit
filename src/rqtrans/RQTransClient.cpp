@@ -1,5 +1,6 @@
 #include "RQTransClient.h"
 #include "RQTransProtocol.h"
+#include "Utils.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -51,4 +52,40 @@ void RQTransClient::transferDir(const std::string &dirpath, const bool force){
 	RQTransProtocol prot(sockfd);
 	prot.execClient('d', dirpath, force);
 	close(sockfd);
+}
+
+void RQTransClient::download(std::string path){
+	RQTransProtocol prot(sockfd);
+	char buff[RQTransProtocol::BUFF_SIZE] = {0};
+	sprintf(buff, "download\n");
+	prot.sendBytes(sockfd, buff, strlen(buff));
+	std::string resp = prot.readline(sockfd);
+	if (resp == "200 OK: Ready\n"){
+		std::string arg1_temp;
+		char arg2_temp;
+		prot.execServer(path, arg1_temp, arg2_temp);
+		close(sockfd);
+	}else{
+		fprintf(stderr, "can not download from server\n");
+		close(sockfd);
+	}
+}
+
+void RQTransClient::upload(std::string filepath){
+	RQTransProtocol prot(sockfd);
+	char buff[RQTransProtocol::BUFF_SIZE] = {0};
+	sprintf(buff, "upload\n");
+	prot.sendBytes(sockfd, buff, strlen(buff));
+	std::string resp = prot.readline(sockfd);
+	if (resp == "200 OK: Ready\n"){
+		if (Utils::isPathDir(filepath)){
+			transferDir(filepath, true);
+		}else{
+			transferFile(filepath, true);
+		}
+		close(sockfd);
+	}else{
+		fprintf(stderr, "can not upload to server\n");
+		close(sockfd);
+	}
 }

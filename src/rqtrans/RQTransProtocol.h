@@ -50,12 +50,16 @@ solution:
 #define RQTRANS_PROTOCOL_H
 class RQTransProtocol{
 private:
-	static const int BUFF_SIZE = 64 * 1024;
 	int sockfd;
 	char * sbuff;
 	int sbuff_size;
 	char type;
 	bool force;
+
+public:
+	static const int BUFF_SIZE = 64 * 1024;
+
+	RQTransProtocol(const int sockfd);
 
 	std::string encodingName(const std::string &name);
 	std::string decodingName(const std::string &name);
@@ -63,19 +67,17 @@ private:
 	void readBytes(int s, char * dest, int len);
 	std::string readline(int s);
 
-public:
-	RQTransProtocol(const int sockfd);
 	bool SetConnection();
 	bool AcceptConnection();
 	bool TransferText(const std::string &input);
 	bool ReceiveText(std::string &output);
 	bool TransferFile(const std::string &fpath);
-	bool ReceiveFile(const std::string &baseDir);
+	bool ReceiveFile(const std::string &baseDir, std::string &last_received);
 	bool TransferDir(const std::string &dpath);
-	bool ReceiveDir(const std::string &baseDir);
+	bool ReceiveDir(const std::string &baseDir, std::string &last_received);
 	bool CloseConnection();
 	bool WaitClose();
 	void execClient(const char type, const std::string &arg, bool force=false);
-	void execServer(const std::string baseDir);
+	bool execServer(const std::string baseDir, std::string &last_received, char &last_received_type);
 };
 #endif

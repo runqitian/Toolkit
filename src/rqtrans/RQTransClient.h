@@ -12,5 +12,7 @@ public:
 	void transferText(const std::string &text);
 	void transferFile(const std::string &filepath, const bool force);
 	void transferDir(const std::string &dirpath, const bool force);
+	void upload(std::string filepath);
+	void download(std::string path);
 };
 #endif
