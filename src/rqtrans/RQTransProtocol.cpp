@@ -156,7 +156,7 @@ bool RQTransProtocol::TransferFile(const std::string &fpath){
 	return false;
 }
 
-bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
+bool RQTransProtocol::ReceiveFile(const std::string &baseDir, std::string &last_received){
 	std::string header = readline(sockfd);
 	char fname[100];
 	long int fsize;
@@ -197,6 +197,7 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir){
 			return false;
 		}
 	}
+	last_received = path;
 
 	// now we can write the file.
 	FILE *fp;
@@ -291,7 +292,7 @@ bool RQTransProtocol::TransferDir(const std::string &dpath) {
 	return false;
 }
 
-bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
+bool RQTransProtocol::ReceiveDir(const std::string &baseDir, std::string &last_received) {
 	long int expectedNum;
 	std::string req = readline(sockfd);
 	if (sscanf(req.c_str(), "t %ld\n", &expectedNum) != 1){
@@ -348,9 +349,9 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir) {
 					return false;
 				} 
 			}
+			last_received = path;
 			first_loop = false;
 		}
-
 
 		// now we can write the file.
 		if (ftype == 'd'){
@@ -512,42 +513,44 @@ void RQTransProtocol::execClient(const char type, const std::string &arg, bool f
 	}
 }
 
-void RQTransProtocol::execServer(const std::string baseDir){
+bool RQTransProtocol::execServer(const std::string baseDir, std::string &last_received, char &last_received_type){
 	if (!AcceptConnection()){
 		fprintf(stderr, "Server: Set up connetion failed\n");
 		close(sockfd);
-		return;
+		return false;
 	}
+	last_received_type = type;
 	if (type == 't'){
 		std::string output;
 		if (!ReceiveText(output)){
 			fprintf(stderr, "Server: Text Reception failed\n");
 			fflush(stderr);
 			close(sockfd);
-			return;
+			return false;
 		}
 		fprintf(stdout, ">>>>>>>>\n%s\n<<<<<<<<\n", output.c_str());
 		fflush(stdout);
 	}
 	else if (type == 'f'){
-		if (!ReceiveFile(baseDir)){
+		if (!ReceiveFile(baseDir, last_received)){
 			fprintf(stderr, "Server: File Reception failed\n");
 			fflush(stderr);
 			close(sockfd);
-			return;
+			return false;
 		}
 		fprintf(stdout, "File received\n");
 		fflush(stdout);
 	}
 	else if (type == 'd'){
-		if (!ReceiveDir(baseDir)){
+		if (!ReceiveDir(baseDir, last_received)){
 			fprintf(stderr, "Server: Directory Reception failed\n");
 			fflush(stderr);
 			close(sockfd);
-			return;
+			return false;
 		}
 		fprintf(stdout, "Directory received\n");
 		fflush(stdout);
 	}
+	return true;
 }
 

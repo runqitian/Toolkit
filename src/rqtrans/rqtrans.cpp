@@ -32,12 +32,27 @@ server:
 	// If data is file, rqtrans -l will write file to target path
 
 It can accept file, directory or text.
+
+UPDATE:
+add upload/download mode:
+server:
+	rqtrans server -p <port>
+
+client:
+	rqtrans config <host> <port>
+	rqtrans upload <path>
+	rqtrans download -o <path>
+
 **/
 
 #define DEFAULT_PORT 9819
 #define DEFAULT_PATH "."
+#define DEDAULT_CONFIG_FILE "/.rqtrans"
 
 struct Info {
+	bool up_down_mode;
+	bool download;
+	bool config_mode;
 	bool server_mode;
 	bool text_mode;
 	bool force;
@@ -51,12 +66,50 @@ struct Info {
 
 int strToPort(char* str);
 bool argParser(int argc, char *argv[], struct Info &info);
+int write_config(const std::string host, const int port);
+int read_config(struct Info &info);
 
 int main(int argc, char *argv[]){
 	struct Info info;
 	if (!argParser(argc, argv, info)){
 		exit(1);
 	}
+
+	// config mode
+	if (info.config_mode){
+		int success = write_config(info.host, info.port);
+		if (success){
+			printf("record successfully!\n");
+			return 0;
+		}else{
+			fprintf(stderr, "failed, please check ~/.rqtrans\n");
+			return 1;
+		}
+	}
+
+	// upload/download mode
+	if (info.up_down_mode){
+		if (info.server_mode){
+			RQTransServer server(info.port);
+			server.upload_download_run(info.path);
+			return 0;
+		}
+		// client mode
+		int success = read_config(info);
+		if (!success){
+			fprintf(stderr, "failed reading config, please check ~/.rqtrans or config first\n");
+			return 1;
+		}
+		RQTransClient client(info.host, info.port);
+		if (info.download) {
+			client.download(info.path);
+		}else{
+			client.upload(info.filepath);
+		}
+		return 0;
+	}
+
+	// not upload/download mode
 	if (info.server_mode){
 		RQTransServer server(info.port);
 		server.run(info.path);
@@ -84,18 +137,48 @@ bool argParser(int argc, char *argv[], struct Info &info){
 		return false;
 	}
 
+	if (strcmp(argv[idx], "config") == 0){
+		if (argc != 4){
+			fprintf(stderr, "--configure usage not correct!\n");
+			return false;
+		}
+		info.config_mode = true;
+		info.host = std::string(argv[2]);
+		info.port = strToPort(argv[3]);
+		if (info.port == -1){
+			fprintf(stderr, "port %s invalid\n", argv[idx]);
+			return false;
+		}
+		return true;
+	}
+	else if (strcmp(argv[idx], "server") == 0){
+		info.up_down_mode = true;
+		info.server_mode = true;
+		++idx;
+	}
+	else if (strcmp(argv[idx], "upload") == 0){
+		info.up_down_mode = true;
+		info.download = false;
+		++idx;
+	}
+	else if (strcmp(argv[idx], "download") == 0){
+		info.up_down_mode = true;
+		info.download = true;
+		++idx;
+	}
+
+
 	while (idx < argc){
 		char *s = argv[idx];
-
-		if (strcmp(s, "--configure") == 0){
-
-		}
-
 
 		// option arguments
 		if (strcmp(s, "-l") == 0){
 			if (info.text_mode){
 				fprintf(stderr, "\'-t\' and \'-l\' can not be used simultaneously!\n");
+				return false;
+			}
+			if (info.up_down_mode){
+				fprintf(stderr, "\'-l\' can not be in upload-download mode!\n");
 				return false;
 			}
 			info.server_mode = true;
@@ -105,6 +188,10 @@ bool argParser(int argc, char *argv[], struct Info &info){
 		if (strcmp(s, "-t") == 0){
 			if (info.server_mode){
 				fprintf(stderr, "\'-t\' and \'-l\' can not be used simultaneously!\n");
+				return false;
+			}
+			if (info.up_down_mode){
+				fprintf(stderr, "\'-t\' can not be in upload-download mode!\n");
 				return false;
 			}
 			info.text_mode = true;
@@ -149,25 +236,72 @@ bool argParser(int argc, char *argv[], struct Info &info){
 		}
 
 		// non option arguments
-		if (info.server_mode){
-			fprintf(stderr, "argument \'%s\' invalid in server mode!\n", s);
-			return false;
-		}
-		info.host = std::string(s);
-		if (++idx == argc - 1){
-			if (info.text_mode){
-				info.text = std::string(argv[idx]);
-			}else{
-				info.filepath = std::string(argv[idx]);
+		if (info.up_down_mode){
+			if (info.server_mode || info.download){
+				fprintf(stderr, "argument \'%s\' invalid in server mode!\n", s);
+				return false;
 			}
-			// will quit loop
-			++idx;
-		}else{
-			fprintf(stderr, "non option argument incorrect\n");
-			return false;
+			// upload param
+			if (idx == argc - 1){
+				info.filepath = std::string(argv[idx]);
+				// will quit loop
+				++idx;
+			}else{
+				fprintf(stderr, "non option argument incorrect\n");
+				return false;
+			}
+		}
+		else{
+			if (info.server_mode){
+				fprintf(stderr, "argument \'%s\' invalid in server mode!\n", s);
+				return false;
+			}
+			info.host = std::string(s);
+			if (++idx == argc - 1){
+				if (info.text_mode){
+					info.text = std::string(argv[idx]);
+				}else{
+					info.filepath = std::string(argv[idx]);
+				}
+				// will quit loop
+				++idx;
+			}else{
+				fprintf(stderr, "non option argument incorrect\n");
+				return false;
+			}
 		}
 	}
 	return true;
+}
+
+int write_config(const std::string host, const int port){
+	FILE *wf;
+	wf = fopen((std::string(getenv("HOME")) + DEDAULT_CONFIG_FILE).c_str(), "w");
+	if (wf == NULL){
+		return 0;
+	}
+	fprintf(wf, "host:%s\nport:%d\n", host.c_str(), port);
+	fclose(wf);
+	return 1;
+}
+
+int read_config(struct Info &info){
+	FILE *rf;
+	rf = fopen((std::string(getenv("HOME")) + DEDAULT_CONFIG_FILE).c_str(), "r");
+	if (rf == NULL){
+		return 0;
+	}
+	char *temp = new char[200];
+	int port;
+	int success = 0;
+	if (fscanf(rf, "host:%s\nport:%d\n", temp, &port) == 2){
+		info.port = port;
+		info.host = std::string(temp);
+		success = 1;
+	}
+	delete[] temp;
+	fclose(rf);
+	return success;
 }
 
 int strToPort(char* str){

@@ -62,8 +62,64 @@ void RQTransServer::run(const std::string path){
 	}
 }
 
+void RQTransServer::upload_download_run(const std::string path){
+	if (!Utils::isPathDir(path)){
+		fprintf(stderr, "target path \'%s\' is not a directory\n", path.c_str());
+		exit(1);
+	}
+	this -> path = path;
+	this -> last_received = "";
+	if ((sockfd = establish_socket()) == -1){
+		fprintf(stderr, "socket establishment failed!\n");
+		exit(1);
+	}
+	fprintf(stdout, "upload-download-server listening...\n");
+	fflush(stdout);
+	while(true){
+		int t;
+		if ((t = get_connection(sockfd)) == -1){
+			printf("connection failed!\n");
+			continue;
+		}
+		bool download = false;
+		if (!upload_download_prot(t, download)){
+			close(t);
+			continue;
+		}
+		RQTransProtocol prot(t);
+		if (download){
+			prot.execClient(this -> last_received_type, this -> last_received, false);
+		}else{
+			bool success = prot.execServer(path, this -> last_received, this -> last_received_type);
+			if (!success){
+				last_received = "";
+			}
+		}
+		close(t);
+	}
+}
+
+bool RQTransServer::upload_download_prot(int sockfd, bool &download){
+	RQTransProtocol prot(sockfd);
+	std::string req = prot.readline(sockfd);
+	if (req == "download\n" && this -> last_received != ""){
+		download = true;
+		std::string res = "200 OK: Ready\n";
+		prot.sendBytes(sockfd, res.c_str(), res.size());
+		return true;
+	}else if (req == "upload\n"){
+		download = false;
+		std::string res = "200 OK: Ready\n";
+		prot.sendBytes(sockfd, res.c_str(), res.size());
+		return true;
+	}
+	std::string res = "400 ERROR: Invalid Request\n";
+	prot.sendBytes(sockfd, res.c_str(), res.size());
+	return false;
+}
+
 void RQTransServer::TransCommunication(const int sockfd){
 	RQTransProtocol prot(sockfd);
-	prot.execServer(path);
+	prot.execServer(path, this -> last_received, this -> last_received_type);
 	close(sockfd);
 }
