@@ -14,6 +14,7 @@ private:
 	int establish_socket();
 	int get_connection(const int sockfd);
 	void TransCommunication(const int sockfd);
+	void UploadDownloadCommunication(const int sockfd);
 public:
 	RQTransServer(const int port);
 	void run(const std::string path);
