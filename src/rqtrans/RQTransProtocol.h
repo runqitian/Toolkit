@@ -77,7 +77,7 @@ public:
 	bool ReceiveDir(const std::string &baseDir, std::string &last_received);
 	bool CloseConnection();
 	bool WaitClose();
-	void execClient(const char type, const std::string &arg, bool force=false);
+	bool execClient(const char type, const std::string &arg, bool force=false);
 	bool execServer(const std::string baseDir, std::string &last_received, char &last_received_type);
 };
 #endif

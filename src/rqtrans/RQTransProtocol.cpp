@@ -135,13 +135,13 @@ bool RQTransProtocol::TransferFile(const std::string &fpath){
 		sendBytes(sockfd, buffer, BUFF_SIZE);
 		bcount += bnum;
 		std::string bar = Utils::getProcessBar((float)bcount / fsize);
-		fprintf(stdout, "\r%s %s", fpath.c_str(), bar.c_str());
+		fprintf(stdout, "\33[2K\r%s %s", fpath.c_str(), bar.c_str());
 	}
 	if (bnum > 0){
 		sendBytes(sockfd, buffer, bnum);
 		bcount += bnum;
 		std::string bar = Utils::getProcessBar((float)bcount / fsize);
-		fprintf(stdout, "\r%s %s", fpath.c_str(), bar.c_str());
+		fprintf(stdout, "\33[2K\r%s %s", fpath.c_str(), bar.c_str());
 	}
 	fprintf(stdout, "\n");
 	free(buffer);
@@ -214,11 +214,11 @@ bool RQTransProtocol::ReceiveFile(const std::string &baseDir, std::string &last_
 		fwrite(fbuffer, sizeof(char), BUFF_SIZE, fp);
 		unread -= BUFF_SIZE;
 		std::string bar = Utils::getProcessBar(1 - (float)unread / fsize);
-		fprintf(stdout, "\r%s %s", path.c_str(), bar.c_str());
+		fprintf(stdout, "\33[2K\r%s %s", path.c_str(), bar.c_str());
 	}
 	readBytes(sockfd, fbuffer, unread);
 	fwrite(fbuffer, sizeof(char), unread, fp);
-	fprintf(stdout, "\r%s %s\n", path.c_str(), Utils::getProcessBar(1).c_str());
+	fprintf(stdout, "\33[2K\r%s %s\n", path.c_str(), Utils::getProcessBar(1).c_str());
 	fclose(fp);
 	const char *resp = "200 OK: Received\n";
 	sendBytes(sockfd, resp, strlen(resp));
@@ -268,13 +268,13 @@ bool RQTransProtocol::TransferDir(const std::string &dpath) {
 				sendBytes(sockfd, buffer, BUFF_SIZE);
 				bcount += bnum;
 				std::string bar = Utils::getProcessBar((float)bcount / fsize);
-				fprintf(stdout, "\r%s %s", pls[i].c_str(), bar.c_str());
+				fprintf(stdout, "\33[2K\r%s %s", pls[i].c_str(), bar.c_str());
 			}
 			if (bnum > 0){
 				sendBytes(sockfd, buffer, bnum);
 				bcount += bnum;
 				std::string bar = Utils::getProcessBar((float)bcount / fsize);
-				fprintf(stdout, "\r%s %s", pls[i].c_str(), bar.c_str());
+				fprintf(stdout, "\33[2K\r%s %s", pls[i].c_str(), bar.c_str());
 			}
 			fclose(fp);
 		}else{
@@ -372,12 +372,12 @@ bool RQTransProtocol::ReceiveDir(const std::string &baseDir, std::string &last_r
 				fwrite(fbuffer, sizeof(char), BUFF_SIZE, fp);
 				unread -= BUFF_SIZE;
 				std::string bar = Utils::getProcessBar(1 - (float)unread / fsize);
-				fprintf(stdout, "\r%s %s", path.c_str(), bar.c_str());
+				fprintf(stdout, "\33[2K\r%s %s", path.c_str(), bar.c_str());
 			}
 			readBytes(sockfd, fbuffer, unread);
 			fwrite(fbuffer, sizeof(char), unread, fp);
 			free(fbuffer);
-			fprintf(stdout, "\r%s %s", path.c_str(), Utils::getProcessBar(1).c_str());
+			fprintf(stdout, "\33[2K\r%s %s", path.c_str(), Utils::getProcessBar(1).c_str());
 			fclose(fp);
 		}
 		fflush(stdout);
@@ -480,26 +480,26 @@ std::string RQTransProtocol::readline(int s){
 }
 
 
-void RQTransProtocol::execClient(const char type, const std::string &arg, bool force){
+bool RQTransProtocol::execClient(const char type, const std::string &arg, bool force){
 	this -> type = type;
 	this -> force = force;
 	if (!SetConnection()){
 		fprintf(stderr, "Client: Setting up connetion failed\n");
 		close(sockfd);
-		exit(1);
+		return false;
 	}
 	if (type == 't'){
 		if (!TransferText(arg)){
 			fprintf(stderr, "Client: Text Transfer failed\n");
 			close(sockfd);
-			exit(1);
+			return false;
 		}
 		fprintf(stdout, "Text sent successfully!\n");
 	}else if (type == 'f'){
 		if (!TransferFile(arg)){
 			fprintf(stderr, "Client: File Transfer failed\n");
 			close(sockfd);
-			exit(1);
+			return false;
 		}
 		fprintf(stdout, "File %s sent successfully!\n", arg.c_str());
 	}
@@ -507,10 +507,11 @@ void RQTransProtocol::execClient(const char type, const std::string &arg, bool f
 		if (!TransferDir(arg)){
 			fprintf(stderr, "Client: Directory Transfer failed\n");
 			close(sockfd);
-			exit(1);
+			return false;
 		}
 		fprintf(stdout, "Directory %s sent successfully!\n", arg.c_str());
 	}
+	return true;
 }
 
 bool RQTransProtocol::execServer(const std::string baseDir, std::string &last_received, char &last_received_type){
