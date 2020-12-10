@@ -4,6 +4,8 @@ Finished:
 * rqtrans
 
 ## rqtrans
+### Updates:
+* Add Upload-Download mode, see usage for details
 ### Intro
 Implement a TCP based application protocol, which support text, file and directory transfer.
 Protocol Design:
@@ -58,6 +60,7 @@ Execute 'make'
 ### Usage
 * This tool can be used to transfer **text**, **file** and **directory**. 
 * Run server mode on the destination side and run client mode on the source side.
+* Add Upload-download mode, run the server mode on remote server. Any client config this server can upload and download files or directories.
 ```
 Client Mode:
 File/Directory Transfer:
@@ -87,4 +90,16 @@ Server Mode:
         
         rqtrans -l -p <port> -o <target directory>
 
+
+New mode: Upload-Download
+client:
+    # firstly, config the server
+    rqtrans config <host> <port>
+    # then you can download and upload files or directories easily.
+    rqtrans download -o <dest path>
+    rqtrans upload <file/directory>
+
+server:
+    # set up a server
+    rqtrans server -p <port>
 ```
