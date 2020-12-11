@@ -106,31 +106,26 @@ bool RQTransServer::upload_download_prot(int sockfd, bool &download){
 }
 
 void RQTransServer::UploadDownloadCommunication(const int sockfd){
-	bool download = false;
-	if (!upload_download_prot(sockfd, download)){
-		close(sockfd);
-		return;
-	}
-	RQTransProtocol prot(sockfd);
-	if (download){
-		try{
-			prot.execClient(this -> last_received_type, this -> last_received, false);
-		}catch (int e){
+	try{
+		bool download = false;
+		if (!upload_download_prot(sockfd, download)){
 			close(sockfd);
 			return;
 		}
-	}else{
-		try{
+		RQTransProtocol prot(sockfd);
+		if (download){
+			prot.execClient(this -> last_received_type, this -> last_received, false);
+		}else{
 			bool success = prot.execServer(path, this -> last_received, this -> last_received_type);
 			if (!success){
 				last_received = "";
 			}
-		}catch(int e){
-			close(sockfd);
-			return;
 		}
+	}catch(int e){
+		printf("Error happened\n");
 	}
 	close(sockfd);
+	return;
 }
 
 void RQTransServer::TransCommunication(const int sockfd){
